@@ -29,6 +29,23 @@ export function ShopPageClient({
     [categories],
   );
 
+  // Color swatches are derived live from the actual colors of the products —
+  // no hardcoded list, so the filter always matches what's in the collection.
+  const availableColors = useMemo(() => {
+    const map = new Map<string, { name: string; hex: string; count: number }>();
+    for (const p of products) {
+      for (const c of p.colors) {
+        const existing = map.get(c.name);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          map.set(c.name, { name: c.name, hex: c.hexCode, count: 1 });
+        }
+      }
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [products]);
+
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("featured");
   const [page, setPage] = useState(1);
@@ -140,7 +157,7 @@ export function ShopPageClient({
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[240px_1fr]">
         <aside className="hidden lg:block">
-          <ShopFiltersPanel filters={filters} onChange={handleFiltersChange} categories={featuredCategories} />
+          <ShopFiltersPanel filters={filters} onChange={handleFiltersChange} categories={featuredCategories} colors={availableColors} />
         </aside>
 
         {mobileFiltersOpen && (
@@ -151,7 +168,7 @@ export function ShopPageClient({
                 <X size={20} />
               </button>
             </div>
-            <ShopFiltersPanel filters={filters} onChange={handleFiltersChange} categories={featuredCategories} />
+            <ShopFiltersPanel filters={filters} onChange={handleFiltersChange} categories={featuredCategories} colors={availableColors} />
             <button
               onClick={() => setMobileFiltersOpen(false)}
               className="mt-6 w-full bg-charcoal py-3.5 text-xs tracking-widest2 uppercase text-white"

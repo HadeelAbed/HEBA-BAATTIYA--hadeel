@@ -12,14 +12,6 @@ export interface ShopFilters {
   sizes: string[];
 }
 
-const ALL_COLORS = [
-  { name: "Noir", hex: "#161616" },
-  { name: "Ivory", hex: "#F1EFEA" },
-  { name: "Slate", hex: "#3A3A38" },
-  { name: "Stone", hex: "#8C8A84" },
-  { name: "Bone", hex: "#F1EFEA" },
-];
-
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"];
 const MAX_PRICE = 25000;
 
@@ -52,10 +44,12 @@ export function ShopFiltersPanel({
   filters,
   onChange,
   categories,
+  colors,
 }: {
   filters: ShopFilters;
   onChange: (filters: ShopFilters) => void;
   categories: Category[];
+  colors: { name: string; hex: string }[];
 }) {
   function toggleCategory(slug: string) {
     const exists = filters.categories.includes(slug);
@@ -123,7 +117,7 @@ export function ShopFiltersPanel({
 
       <FilterSection title="Color">
         <div className="flex flex-wrap gap-3">
-          {ALL_COLORS.map((color) => (
+          {colors.map((color) => (
             <button
               key={color.name}
               onClick={() => toggleColor(color.name)}
