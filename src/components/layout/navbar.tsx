@@ -94,17 +94,6 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
                 {link.label}
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={cn(
-                  "font-body text-[13px] tracking-widest2 uppercase underline underline-offset-8 transition-opacity hover:opacity-60",
-                  isTransparent ? "text-white" : "text-charcoal"
-                )}
-              >
-                Admin
-              </Link>
-            )}
           </nav>
 
           <div className="flex flex-1 justify-center lg:flex-none">
@@ -177,15 +166,6 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
                   {link.label}
                 </Link>
               ))}
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="font-display text-2xl tracking-wide text-charcoal"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Admin
-                </Link>
-              )}
               <div className="mt-6 flex gap-8 border-t border-hairline pt-6">
                 {status === "authenticated" ? (
                   <button
