@@ -2,8 +2,8 @@
  * Image manifest — curated Unsplash photography (Unsplash License: free for
  * commercial use, no attribution required) used as placeholder imagery
  * throughout the storefront. Swap these for real campaign photography when
- * the brand's own shoot is ready; the `id` keys are referenced from
- * src/data/products.ts so swapping is a one-line change per image.
+ * the brand's own shoot is ready. Product image keys are stored on the
+ * Product records in the database.
  */
 
 const u = (id: string, w = 1400, q = 80) =>

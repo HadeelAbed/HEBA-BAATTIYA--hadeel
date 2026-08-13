@@ -119,21 +119,16 @@ public/
 
 ---
 
-## Connecting a Real Backend
+## Backend
 
-The mock data layer in `src/data/` mirrors the shape of Prisma query results exactly, so swapping
-it out is mechanical:
+The application runs on a real backend end-to-end:
 
-1. **Database**: provision a Postgres instance (Neon, Supabase, Railway, or self-hosted), set
-   `DATABASE_URL` in `.env`, then run `npx prisma db push` and `npm run db:seed`.
-2. **Replace mock imports**: pages currently importing from `@/data/products` or `@/data/customer`
-   should instead fetch from the corresponding API route (already written in `src/app/api/`) or
-   query Prisma directly in a Server Component.
-3. **Wire up real auth**: `src/lib/auth.ts` is a complete NextAuth config. Update the login/register
-   forms (`src/app/login/page.tsx`, `src/app/register/page.tsx`) to call `signIn()` and
-   `POST /api/register` instead of the simulated `setTimeout` calls.
-4. **Enable middleware protection**: `src/middleware.ts` has the real auth-guard logic written as a
-   comment — uncomment it once sessions are live, to actually gate `/dashboard` and `/admin`.
+- **Database**: PostgreSQL (Neon in production, `.env` `DATABASE_URL`). Schema in `prisma/schema.prisma`.
+  Create the tables with `npx prisma db push`, then load starter content with `npm run db:seed`.
+- **Data layer**: Server Components and API routes (`src/app/api/`) query Prisma directly
+  (`src/lib/queries.ts`, `src/lib/prisma.ts`). No mock data files remain.
+- **Auth**: NextAuth (JWT sessions) via `src/lib/auth.ts`. Login/register/reset flow in `src/app/(auth)/`.
+- **Protection**: `src/middleware.ts` gates `/dashboard` and `/admin` by session + role.
 
 ---
 
