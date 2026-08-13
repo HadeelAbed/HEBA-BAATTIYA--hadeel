@@ -43,7 +43,12 @@ export default function LoginPage() {
     toast.success("Welcome back");
     const session = await getSession();
     const role = session?.user?.role;
-    router.push(role === "ADMIN" || role === "SUPER_ADMIN" ? "/admin" : "/");
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      router.push("/admin");
+    } else {
+      const cb = new URLSearchParams(window.location.search).get("callbackUrl");
+      router.push(cb && cb.startsWith("/") ? cb : "/");
+    }
     router.refresh();
   }
 
