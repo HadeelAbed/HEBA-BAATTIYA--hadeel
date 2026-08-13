@@ -20,11 +20,34 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+
+  async function onGoogle() {
+    setGoogleLoading(true);
+    try {
+      const result = await signIn("google", {
+        callbackUrl: "/dashboard",
+        redirect: false,
+      });
+      if (result?.error) {
+        toast.error("Google sign-in is not configured yet.");
+        setGoogleLoading(false);
+        return;
+      }
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+    } catch {
+      toast.error("Google sign-in is not configured yet.");
+    }
+    setGoogleLoading(false);
+  }
 
   async function onSubmit(data: LoginFormData) {
     setSubmitting(true);
@@ -103,7 +126,12 @@ export default function LoginPage() {
               <div className="h-px flex-1 bg-hairline" />
             </div>
 
-            <button className="flex w-full items-center justify-center gap-3 border border-mist py-3 text-sm transition hover:border-charcoal">
+            <button
+              type="button"
+              onClick={onGoogle}
+              disabled={googleLoading}
+              className="flex w-full items-center justify-center gap-3 border border-mist py-3 text-sm transition hover:border-charcoal disabled:opacity-50"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
