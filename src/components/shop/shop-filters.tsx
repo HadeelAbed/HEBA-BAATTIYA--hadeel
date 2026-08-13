@@ -59,11 +59,11 @@ export function ShopFiltersPanel({
     });
   }
 
-  function toggleColor(name: string) {
-    const exists = filters.colors.includes(name);
+  function toggleColor(hex: string) {
+    const exists = filters.colors.includes(hex);
     onChange({
       ...filters,
-      colors: exists ? filters.colors.filter((c) => c !== name) : [...filters.colors, name],
+      colors: exists ? filters.colors.filter((c) => c !== hex) : [...filters.colors, hex],
     });
   }
 
@@ -117,20 +117,23 @@ export function ShopFiltersPanel({
 
       <FilterSection title="Color">
         <div className="flex flex-wrap gap-3">
-          {colors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => toggleColor(color.name)}
-              aria-label={color.name}
-              aria-pressed={filters.colors.includes(color.name)}
-              className={cn(
-                "h-8 w-8 rounded-full border transition",
-                filters.colors.includes(color.name) ? "ring-2 ring-charcoal ring-offset-2" : "border-mist"
-              )}
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
-            />
-          ))}
+          {colors.map((color) => {
+            const value = color.hex || color.name;
+            return (
+              <button
+                key={value}
+                onClick={() => toggleColor(value)}
+                aria-label={color.name}
+                aria-pressed={filters.colors.includes(value)}
+                className={cn(
+                  "h-8 w-8 rounded-full border transition",
+                  filters.colors.includes(value) ? "ring-2 ring-charcoal ring-offset-2" : "border-mist"
+                )}
+                style={{ backgroundColor: color.hex }}
+                title={color.name}
+              />
+            );
+          })}
         </div>
       </FilterSection>
 

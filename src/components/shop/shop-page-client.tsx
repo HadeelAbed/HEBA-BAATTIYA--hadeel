@@ -30,16 +30,17 @@ export function ShopPageClient({
   );
 
   // Color swatches are derived live from the actual colors of the products —
-  // no hardcoded list, so the filter always matches what's in the collection.
+  // grouped by exact shade (hex code) so the filter matches precisely.
   const availableColors = useMemo(() => {
     const map = new Map<string, { name: string; hex: string; count: number }>();
     for (const p of products) {
       for (const c of p.colors) {
-        const existing = map.get(c.name);
+        const key = c.hexCode?.trim().toUpperCase() || c.name;
+        const existing = map.get(key);
         if (existing) {
           existing.count += 1;
         } else {
-          map.set(c.name, { name: c.name, hex: c.hexCode, count: 1 });
+          map.set(key, { name: c.name, hex: c.hexCode, count: 1 });
         }
       }
     }
@@ -77,7 +78,9 @@ export function ShopPageClient({
     result = result.filter((p) => p.price <= filters.priceRange[1]);
 
     if (filters.colors.length) {
-      result = result.filter((p) => p.colors.some((c) => filters.colors.includes(c.name)));
+      result = result.filter((p) =>
+        p.colors.some((c) => filters.colors.includes(c.hexCode?.trim().toUpperCase() || c.name))
+      );
     }
 
     if (filters.sizes.length) {

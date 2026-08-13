@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Product, Category } from "@/types";
 import { Input, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { COLOR_PALETTE, colorNameForHex } from "@/lib/colors";
 
 export function AdminProductForm({ initial, categories }: { initial?: Product; categories: Category[] }) {
   const router = useRouter();
@@ -271,28 +272,15 @@ function normalizeHex(value: string): string | null {
 
 function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string }) => void }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
   const [code, setCode] = useState("");
 
-  const previewHex = normalizeHex(code) ?? normalizeHex(name) ?? "#161616";
-
-  function handleNameChange(value: string) {
-    // If a hex code is typed into the name box, route it to the code box instead.
-    if (normalizeHex(value)) {
-      setCode(value);
-      setName("");
-    } else {
-      setName(value);
-    }
-  }
+  const hex = normalizeHex(code);
+  const previewHex = hex ?? "#161616";
 
   function submit(e?: { preventDefault: () => void }) {
     e?.preventDefault();
-    const hexCode = normalizeHex(code) ?? normalizeHex(name);
-    const colorName = name.trim() && !normalizeHex(name) ? name.trim() : "";
-    if (!colorName || !hexCode) return;
-    onAdd({ name: colorName, hexCode });
-    setName("");
+    if (!hex) return;
+    onAdd({ name: colorNameForHex(hex), hexCode: hex });
     setCode("");
     setOpen(false);
   }
@@ -310,51 +298,58 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
   }
 
   return (
-    <div className="flex items-center gap-2 border border-charcoal px-2 py-1.5">
-      <span
-        className="h-7 w-7 shrink-0 rounded-full border border-black/10"
-        style={{ backgroundColor: previewHex }}
-        aria-hidden
-      />
-      <input
-        type="color"
-        value={previewHex}
-        onChange={(e) => setCode(e.target.value)}
-        aria-label="Pick exact color shade"
-        title="Pick exact color shade"
-        className="h-7 w-7 cursor-pointer border border-mist bg-white p-0.5"
-      />
-      <input
-        autoFocus
-        value={name}
-        onChange={(e) => handleNameChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") submit(e);
-          if (e.key === "Escape") setOpen(false);
-        }}
-        placeholder="Name (e.g. Blue)"
-        className="w-24 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
-      />
-      <input
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") submit(e);
-          if (e.key === "Escape") setOpen(false);
-        }}
-        placeholder="#BFE3F2"
-        title="Color code (hex), e.g. #BFE3F2"
-        className="w-24 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
-      />
-      <span className="w-14 shrink-0 text-[10px] text-stone">{previewHex}</span>
-      <button
-        type="button"
-        onClick={() => submit()}
-        disabled={!name.trim() || !normalizeHex(code)}
-        className="text-xs tracking-widest2 uppercase text-charcoal disabled:opacity-40"
-      >
-        Add
-      </button>
+    <div className="border border-charcoal p-2">
+      <div className="flex flex-wrap gap-1.5">
+        {COLOR_PALETTE.map((c) => (
+          <button
+            key={c.hex}
+            type="button"
+            onClick={() => setCode(c.hex)}
+            title={c.name}
+            aria-label={c.name}
+            className={`h-6 w-6 rounded-full border transition ${
+              hex === c.hex ? "ring-2 ring-charcoal ring-offset-1" : "border-black/10 hover:scale-110"
+            }`}
+            style={{ backgroundColor: c.hex }}
+          />
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <span
+          className="h-6 w-6 shrink-0 rounded-full border border-black/10"
+          style={{ backgroundColor: previewHex }}
+          aria-hidden
+        />
+        <input
+          type="color"
+          value={previewHex}
+          onChange={(e) => setCode(e.target.value)}
+          aria-label="Pick exact color shade"
+          title="Pick exact color shade"
+          className="h-7 w-7 cursor-pointer border border-mist bg-white p-0.5"
+        />
+        <input
+          autoFocus
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit(e);
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="#BFE3F2"
+          title="Color code (hex), e.g. #BFE3F2"
+          className="w-24 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
+        />
+        <span className="shrink-0 text-[10px] text-stone">{previewHex}</span>
+        <button
+          type="button"
+          onClick={() => submit()}
+          disabled={!hex}
+          className="text-xs tracking-widest2 uppercase text-charcoal disabled:opacity-40"
+        >
+          Add
+        </button>
+      </div>
     </div>
   );
 }
