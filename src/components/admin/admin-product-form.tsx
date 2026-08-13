@@ -13,7 +13,9 @@ export function AdminProductForm({ initial, categories }: { initial?: Product; c
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [images, setImages] = useState<string[]>(initial?.images.map((i) => i.url) ?? []);
-  const [colors, setColors] = useState<string[]>(initial?.colors.map((c) => c.name) ?? ["Noir"]);
+  const [colors, setColors] = useState<{ name: string; hexCode: string }[]>(
+    initial?.colors.map((c) => ({ name: c.name, hexCode: c.hexCode })) ?? [{ name: "Noir", hexCode: "#161616" }]
+  );
   const [sizes, setSizes] = useState<string[]>(initial?.sizes.map((s) => s.label) ?? ["XS", "S", "M", "L", "XL"]);
   const [form, setForm] = useState({
     name: initial?.name ?? "",
@@ -178,13 +180,19 @@ export function AdminProductForm({ initial, categories }: { initial?: Product; c
             <div className="flex flex-wrap gap-2">
               {colors.map((c, i) => (
                 <span key={i} className="flex items-center gap-2 border border-mist px-3 py-1.5 text-xs">
-                  {c}
+                  <span
+                    className="h-4 w-4 rounded-full border border-black/10"
+                    style={{ backgroundColor: c.hexCode }}
+                    aria-hidden
+                  />
+                  {c.name}
+                  <span className="text-[10px] text-stone">{c.hexCode}</span>
                   <button type="button" onClick={() => setColors((prev) => prev.filter((_, idx) => idx !== i))}>
                     <X size={12} />
                   </button>
                 </span>
               ))}
-              <AddTag onAdd={(val) => setColors((prev) => [...prev, val])} placeholder="Add color" />
+              <AddColor onAdd={(color) => setColors((prev) => [...prev, color])} />
             </div>
           </div>
 
@@ -253,6 +261,64 @@ export function AdminProductForm({ initial, categories }: { initial?: Product; c
         </Button>
       </div>
     </form>
+  );
+}
+
+function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string }) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [hex, setHex] = useState("#161616");
+
+  function submit() {
+    if (!name.trim()) return;
+    onAdd({ name: name.trim(), hexCode: hex });
+    setName("");
+    setHex("#161616");
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1 border border-dashed border-mist px-3 py-1.5 text-xs text-stone hover:border-charcoal hover:text-charcoal"
+      >
+        <Plus size={12} /> Add color
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 border border-charcoal px-2 py-1.5">
+      <input
+        type="color"
+        value={hex}
+        onChange={(e) => setHex(e.target.value)}
+        aria-label="Pick exact color shade"
+        title="Pick exact color shade"
+        className="h-7 w-7 cursor-pointer border border-mist bg-white p-0.5"
+      />
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") setOpen(false);
+        }}
+        placeholder="Color name"
+        className="w-28 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!name.trim()}
+        className="text-xs tracking-widest2 uppercase text-charcoal disabled:opacity-40"
+      >
+        Add
+      </button>
+    </div>
   );
 }
 

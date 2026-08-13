@@ -47,7 +47,7 @@ type ProductInput = {
   compareAtPrice?: number;
   categoryId: string;
   status: string;
-  colors?: string[];
+  colors?: { name: string; hexCode?: string }[];
   sizes?: string[];
   images?: string[];
   stockTotal?: number;
@@ -69,7 +69,20 @@ function parseBody(body: unknown): ProductInput | null {
     compareAtPrice: b.compareAtPrice !== undefined && b.compareAtPrice !== null ? Number(b.compareAtPrice) : undefined,
     categoryId,
     status: typeof b.status === "string" ? b.status : "DRAFT",
-    colors: Array.isArray(b.colors) ? b.colors.map(String).filter(Boolean) : [],
+    colors: Array.isArray(b.colors)
+      ? b.colors
+          .map((c) => {
+            if (typeof c === "string") return c.trim() ? { name: c.trim() } : null;
+            if (c && typeof c === "object") {
+              const obj = c as Record<string, unknown>;
+              const name = typeof obj.name === "string" ? obj.name.trim() : "";
+              const hexCode = typeof obj.hexCode === "string" ? obj.hexCode.trim() : undefined;
+              return name ? { name, hexCode } : null;
+            }
+            return null;
+          })
+          .filter((c): c is { name: string; hexCode?: string } => Boolean(c))
+      : [],
     sizes: Array.isArray(b.sizes) ? b.sizes.map(String).filter(Boolean) : [],
     images: Array.isArray(b.images) ? b.images.map(String).filter(Boolean) : [],
     stockTotal: Number(b.stockTotal ?? 0),
@@ -83,7 +96,7 @@ async function createOrUpdateChildren(productId: string, input: ProductInput) {
   await prisma.productSize.deleteMany({ where: { productId } });
   await prisma.productImage.deleteMany({ where: { productId } });
 
-  const colorNames = [...new Set(input.colors ?? [])];
+  const colorObjs = [...new Map((input.colors ?? []).map((c) => [c.name, c])).values()];
   const sizeLabels = [...new Set(input.sizes ?? [])];
 
   const images = [];
@@ -97,8 +110,12 @@ async function createOrUpdateChildren(productId: string, input: ProductInput) {
   await Promise.all(images);
 
   const colors = [];
-  for (const name of colorNames) {
-    colors.push(prisma.productColor.create({ data: { productId, name, hexCode: hexForColor(name) } }));
+  for (const c of colorObjs) {
+    colors.push(
+      prisma.productColor.create({
+        data: { productId, name: c.name, hexCode: c.hexCode ?? hexForColor(c.name) },
+      })
+    );
   }
   const createdColors = await Promise.all(colors);
 
