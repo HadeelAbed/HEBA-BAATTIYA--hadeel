@@ -110,6 +110,15 @@ export function CheckoutForm() {
 
     setSubmitting(false);
     clearCart();
+
+    // Online payments redirect to the Tap-hosted payment page; the customer
+    // returns to /order-confirmation/<orderNumber> afterwards.
+    const paymentUrl = body.payment?.url as string | undefined;
+    if (paymentUrl) {
+      window.location.href = paymentUrl;
+      return;
+    }
+
     router.push(`/order-confirmation/${orderNumber}`);
   }
 

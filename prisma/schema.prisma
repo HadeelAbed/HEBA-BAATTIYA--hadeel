@@ -404,7 +404,8 @@ model Order {
   trackingCarrier String?
   notes           String?
 
-  items OrderItem[]
+  items    OrderItem[]
+  payments Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -413,6 +414,37 @@ model Order {
   @@index([status])
   @@index([orderNumber])
   @@map("orders")
+}
+
+model Payment {
+  id    String @id @default(cuid())
+  orderId String
+  order Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Tap Payments charge reference — the server-side transaction id
+  tapChargeId  String? @unique
+  tapPaymentId String?
+
+  amount       Decimal @default(0)
+  currency     String  @default("SAR")
+  method       String? // MADA / VISA / MASTERCARD / APPLE_PAY / STC_PAY
+  description  String?
+
+  // PENDING | PAID | FAILED | CANCELLED | REFUNDED
+  status String @default("PENDING")
+
+  // Hosted payment page the customer is redirected to
+  url   String?
+  paidAt DateTime?
+
+  // Raw Tap charge/webhook payload for reconciliation (server-side only — never sent to the client)
+  raw Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("payments")
 }
 
 model OrderItem {

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkoutSchema } from "@/lib/validations";
 import { generateOrderNumber } from "@/lib/utils";
+import { createTapCharge, isTapConfigured, TapError } from "@/lib/tap";
+import { decrementStock } from "@/lib/stock";
 
 const TAX_RATE = 0.15;
 const FREE_SHIPPING_THRESHOLD = 2000;
@@ -31,6 +34,16 @@ export async function POST(req: NextRequest) {
 
   if (lines.length === 0) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
+  }
+
+  if (parsed.data.paymentMethod !== "CASH_ON_DELIVERY" && !isTapConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Online payments are not available yet. Please select Cash on Delivery, or contact support.",
+      },
+      { status: 503 }
+    );
   }
 
   const productIds = lines.map((l) => l.productId);
@@ -126,33 +139,85 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Payment capture would happen here based on parsed.data.paymentMethod:
-  // - MADA / VISA / MASTERCARD: redirect to PSP-hosted payment page or use a tokenized charge
-  // - APPLE_PAY: validate Apple Pay merchant session + process payment token
-  // - STC_PAY: redirect to STC Pay's hosted checkout and confirm via webhook
-  // On success, update order.paymentStatus to "PAID" via a webhook handler.
-  // For Cash on Delivery the order is confirmed immediately.
-
-  // Deduct stock for each item purchased
-  for (const l of lines) {
-    const variants = await prisma.productVariant.findMany({
-      where: { productId: l.productId },
-      orderBy: { stock: "desc" },
-    });
-    if (variants.length > 0) {
-      await prisma.productVariant.update({
-        where: { id: variants[0].id },
-        data: { stock: { decrement: l.quantity } },
-      });
-    }
-  }
-
+  // Stock is deducted only when the order is guaranteed to be fulfilled:
+  // - COD: confirmed immediately at checkout.
+  // - Card: only after Tap confirms the payment via webhook, so stock is
+  //   never reserved for unpaid orders.
   if (parsed.data.paymentMethod === "CASH_ON_DELIVERY") {
+    await decrementStock(lines);
     await prisma.order.update({
       where: { id: order.id },
       data: { paymentStatus: "PENDING", status: "CONFIRMED" },
     });
+    return NextResponse.json({ order: { ...order, items } }, { status: 201 });
   }
 
-  return NextResponse.json({ order: { ...order, items } }, { status: 201 });
+  // --- Online payment via Tap Payments (hosted payment page) ---
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const callbackUrl = `${siteUrl}/order-confirmation/${order.orderNumber}`;
+
+  const payment = await prisma.payment.create({
+    data: {
+      orderId: order.id,
+      amount: total,
+      currency: "SAR",
+      method: parsed.data.paymentMethod,
+      description: `Order ${order.orderNumber}`,
+      status: "PENDING",
+    },
+  });
+
+  try {
+    const charge = await createTapCharge({
+      amount: total,
+      currency: "SAR",
+      description: `Order ${order.orderNumber}`,
+      customer: {
+        firstName: parsed.data.fullName,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+      },
+      redirectUrl: callbackUrl,
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
+    });
+
+    const paymentUrl = charge.transaction?.url;
+    if (!paymentUrl) {
+      throw new TapError("Tap did not return a payment page URL.", "NO_PAYMENT_URL", 502);
+    }
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        tapChargeId: charge.id,
+        tapPaymentId: charge.reference?.payment ?? charge.transaction?.payment_id,
+        url: paymentUrl,
+        raw: charge as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        order: { ...order, items },
+        payment: { id: payment.id, tapChargeId: charge.id, url: paymentUrl },
+      },
+      { status: 201 }
+    );
+  } catch (err) {
+    // Payment could not be initiated — mark the payment attempt failed and
+    // surface a friendly error. The order remains PENDING so the customer
+    // can retry; nothing has been charged.
+    const message = err instanceof TapError ? err.message : "Payment could not be initiated.";
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: "FAILED",
+        raw: { error: message } as unknown as Prisma.InputJsonValue,
+      },
+    });
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 }

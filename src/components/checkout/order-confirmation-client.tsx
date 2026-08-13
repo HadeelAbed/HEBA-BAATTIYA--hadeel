@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package } from "lucide-react";
+import { CheckCircle2, Package, Clock, XCircle } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +41,7 @@ export function OrderConfirmationClient({
   orderNumber: string;
 }) {
   const [order, setOrder] = useState<StoredOrder | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("hb-last-order");
@@ -49,6 +50,31 @@ export function OrderConfirmationClient({
       if (parsed.orderNumber === orderNumber) setOrder(parsed);
     }
   }, [orderNumber]);
+
+  // For online (card) orders, reflect the live Tap payment status after the
+  // customer returns from the payment page. Polls a read-only endpoint.
+  useEffect(() => {
+    if (!order || order.shipping.paymentMethod === "CASH_ON_DELIVERY") return;
+
+    let attempts = 0;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderNumber}/payment-status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setPaymentStatus(data.paymentStatus as string | null);
+        if (data.paymentStatus === "PAID" || data.paymentStatus === "FAILED") {
+          clearInterval(timer);
+        }
+      } catch {
+        // keep polling
+      }
+      attempts += 1;
+      if (attempts >= 40) clearInterval(timer);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [orderNumber, order]);
 
   return (
     <div className="container-site py-16">
@@ -72,6 +98,29 @@ export function OrderConfirmationClient({
         <p className="mt-6 font-body text-lg tracking-wide">{orderNumber}</p>
         <p className="mt-1 text-xs text-stone">{formatDate(new Date())}</p>
       </motion.div>
+
+      {order && order.shipping.paymentMethod !== "CASH_ON_DELIVERY" && (
+        <div className="mx-auto mt-8 max-w-lg">
+          {paymentStatus === "PAID" && (
+            <div className="flex items-center justify-center gap-2 border border-hairline bg-bone px-4 py-3 text-sm text-graphite">
+              <CheckCircle2 size={16} className="text-charcoal" />
+              Payment received — your order is confirmed.
+            </div>
+          )}
+          {paymentStatus === "PENDING" && (
+            <div className="flex items-center justify-center gap-2 border border-hairline px-4 py-3 text-sm text-graphite">
+              <Clock size={16} className="animate-pulse text-stone" />
+              Payment is being processed… this page refreshes automatically.
+            </div>
+          )}
+          {paymentStatus === "FAILED" && (
+            <div className="flex items-center justify-center gap-2 border border-charcoal bg-bone px-4 py-3 text-sm text-graphite">
+              <XCircle size={16} className="text-charcoal" />
+              Payment was not completed. Please try again or contact us.
+            </div>
+          )}
+        </div>
+      )}
 
       {order ? (
         <div className="mx-auto mt-14 max-w-2xl">

@@ -162,6 +162,20 @@ export interface Order {
   trackingNumber?: string;
   trackingCarrier?: string;
   items: OrderItemLine[];
+  payments?: Payment[];
+  createdAt: string;
+}
+
+export interface Payment {
+  id: string;
+  tapChargeId?: string;
+  tapPaymentId?: string;
+  amount: number;
+  currency: string;
+  method?: string;
+  description?: string;
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED";
+  paidAt?: string;
   createdAt: string;
 }
 

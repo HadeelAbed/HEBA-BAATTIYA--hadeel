@@ -8,12 +8,30 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const orders = await prisma.order.findMany({
-    include: { items: true, user: { select: { id: true, name: true, email: true } } },
+    include: {
+      items: true,
+      payments: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
   return NextResponse.json({
-    orders: orders.map((o) => ({ ...mapOrder(o), user: o.user })),
+    orders: orders.map((o) => ({
+      ...mapOrder(o),
+      user: o.user,
+      payments: o.payments.map((p) => ({
+        id: p.id,
+        tapChargeId: p.tapChargeId,
+        tapPaymentId: p.tapPaymentId,
+        amount: Number(p.amount),
+        currency: p.currency,
+        method: p.method,
+        status: p.status,
+        paidAt: p.paidAt?.toISOString(),
+        createdAt: p.createdAt.toISOString(),
+      })),
+    })),
   });
 }
 

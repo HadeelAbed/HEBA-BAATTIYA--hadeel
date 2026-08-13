@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { Order, OrderStatus } from "@/types";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { formatPrice, formatDate, cn } from "@/lib/utils";
 
 const ALL_STATUSES: OrderStatus[] = [
   "PENDING",
@@ -18,6 +18,13 @@ const ALL_STATUSES: OrderStatus[] = [
   "REFUNDED",
   "RETURNED",
 ];
+
+const PAYMENT_STATUS_STYLES: Record<string, string> = {
+  PAID: "bg-emerald-50 text-emerald-700",
+  PENDING: "bg-amber-50 text-amber-700",
+  FAILED: "bg-red-50 text-red-700",
+  REFUNDED: "bg-stone-100 text-stone-500",
+};
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -128,8 +135,24 @@ export default function AdminOrdersPage() {
                   <td className="px-6 py-4 text-graphite">
                     {formatDate(order.createdAt)}
                   </td>
-                  <td className="px-6 py-4 text-graphite">
-                    {order.paymentMethod ?? "—"}
+                  <td className="px-6 py-4">
+                    <p>{order.paymentMethod ?? "—"}</p>
+                    <span
+                      className={cn(
+                        "mt-1 inline-block px-1.5 py-0.5 text-[10px] tracking-wider uppercase",
+                        PAYMENT_STATUS_STYLES[order.paymentStatus] ?? "bg-bone text-graphite"
+                      )}
+                    >
+                      {order.paymentStatus}
+                    </span>
+                    {order.payments?.[0]?.tapChargeId && (
+                      <p
+                        className="mt-1 max-w-[160px] truncate text-[10px] text-stone"
+                        title="Tap transaction reference"
+                      >
+                        {order.payments[0].tapChargeId}
+                      </p>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <select
