@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -17,10 +17,23 @@ interface AdminCustomer {
   totalSpent: number;
 }
 
+interface AddAdminForm {
+  name: string;
+  email: string;
+  password: string;
+  role: "ADMIN" | "SUPER_ADMIN";
+}
+
+const EMPTY_FORM: AddAdminForm = { name: "", email: "", password: "", role: "ADMIN" };
+
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[] | null>(null);
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<AddAdminForm>(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
 
   function load() {
     fetch("/api/admin/customers")
@@ -34,11 +47,40 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => setIsSuperAdmin(s?.user?.role === "SUPER_ADMIN"))
+      .catch(() => {});
   }, []);
 
   const filtered = (customers ?? []).filter(
     (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  async function createAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      const res = await fetch("/api/admin/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? "Failed to add admin");
+        return;
+      }
+      toast.success(`${body.user.email} is now ${body.user.role === "SUPER_ADMIN" ? "super admin" : "admin"}`);
+      setForm(EMPTY_FORM);
+      setShowForm(false);
+      load();
+    } catch {
+      toast.error("Failed to add admin");
+    } finally {
+      setCreating(false);
+    }
+  }
 
   async function changeRole(c: AdminCustomer) {
     const nextRole = c.role === "ADMIN" ? "CUSTOMER" : "ADMIN";
@@ -67,16 +109,89 @@ export default function AdminCustomersPage() {
     <>
       <AdminTopbar title="Customers" />
       <div className="p-8">
-        <div className="mb-6 relative w-full max-w-xs">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search customers..."
-            className="w-full border border-mist bg-white py-2.5 pl-9 pr-4 text-sm focus:border-charcoal focus:outline-none"
-          />
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="relative w-full max-w-xs">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search customers..."
+              className="w-full border border-mist bg-white py-2.5 pl-9 pr-4 text-sm focus:border-charcoal focus:outline-none"
+            />
+          </div>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowForm((v) => !v)}
+              className="flex items-center gap-2 rounded-sm bg-charcoal px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+            >
+              <UserPlus size={15} strokeWidth={1.5} />
+              {showForm ? "Cancel" : "Add Admin"}
+            </button>
+          )}
         </div>
+
+        {isSuperAdmin && showForm && (
+          <form
+            onSubmit={createAdmin}
+            className="mb-6 grid grid-cols-1 gap-4 border border-hairline bg-white p-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-stone">Name (optional)</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Rania"
+                className="w-full border border-mist bg-white px-3 py-2.5 text-sm focus:border-charcoal focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-stone">Email</label>
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="admin@example.com"
+                className="w-full border border-mist bg-white px-3 py-2.5 text-sm focus:border-charcoal focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-stone">Password (min 8 chars)</label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="••••••••"
+                className="w-full border border-mist bg-white px-3 py-2.5 text-sm focus:border-charcoal focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col justify-end gap-2">
+              <label className="mb-1.5 block text-xs font-medium text-stone">Role</label>
+              <div className="flex items-center gap-4">
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value as AddAdminForm["role"] })}
+                  className="flex-1 border border-mist bg-white px-3 py-2.5 text-sm focus:border-charcoal focus:outline-none"
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="rounded-sm bg-charcoal px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {creating ? "Adding..." : "Create"}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
 
         <div className="overflow-x-auto border border-hairline bg-white">
           <table className="w-full text-sm">

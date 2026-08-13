@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Package,
@@ -12,9 +13,11 @@ import {
   BarChart3,
   FileText,
   LogOut,
+  Store,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/lib/store/cart-store";
 
 const LINKS = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -56,9 +59,20 @@ export function AdminSidebar() {
       </nav>
       <div className="border-t border-hairline p-4">
         <Link href="/" className="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm text-stone hover:bg-bone">
-          <LogOut size={16} strokeWidth={1.5} />
-          Exit to Storefront
+          <Store size={16} strokeWidth={1.5} />
+          Storefront
         </Link>
+        <button
+          type="button"
+          onClick={() => {
+            useCartStore.setState({ lines: [], coupon: null });
+            signOut({ callbackUrl: "/" });
+          }}
+          className="flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-left text-sm text-stone hover:bg-bone"
+        >
+          <LogOut size={16} strokeWidth={1.5} />
+          Sign Out
+        </button>
       </div>
     </aside>
   );
