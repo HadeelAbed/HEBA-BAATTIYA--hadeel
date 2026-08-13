@@ -43,7 +43,7 @@ async function main() {
   console.log("public size now:", (size / 1024 / 1024).toFixed(1), "MB,", files, "files");
 
   // 4. State of DSC_6869 (was png, converted?)
-  const pngPath = path.join(PUBLIC, decodeURIComponent("%D8%AA%D8%B9%D8%AF%D9%8A%D9%84%2F%D8%AA%D8%B9%D8%AF%D9%8A%D9%84/%D8%A7%D8%AD%D9%85%D8%B1/DSC_6869%20copy.png".replace(/^\//, "")));
+  const pngPath = path.join(PUBLIC, decodeURIComponent("/rtw/red/DSC_6869 copy.png".replace(/^\//, "")));
   console.log("DSC_6869 copy.png exists:", fs.existsSync(pngPath), fs.existsSync(pngPath) ? (fs.statSync(pngPath).size / 1024).toFixed(0) + "KB" : "");
   if (fs.existsSync(pngPath)) {
     const head = fs.readFileSync(pngPath).subarray(0, 3).toString("hex");
