@@ -117,17 +117,6 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
             >
               <User size={19} strokeWidth={1.5} />
             </Link>
-            {status === "authenticated" && (
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className={cn(
-                  "hidden text-[11px] tracking-widest2 uppercase transition-opacity hover:opacity-60 md:block",
-                  isTransparent ? "text-white" : "text-charcoal"
-                )}
-              >
-                Sign Out
-              </button>
-            )}
             <Link
               href="/wishlist"
               aria-label="Wishlist"
