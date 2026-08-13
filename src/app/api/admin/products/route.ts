@@ -37,6 +37,11 @@ function hexForColor(name: string) {
   return "#161616";
 }
 
+function normalizeHex(value: string): string | null {
+  const m = value.trim().match(/^#?([0-9a-fA-F]{6})$/);
+  return m ? `#${m[1].toUpperCase()}` : null;
+}
+
 type ProductInput = {
   name: string;
   sku: string;
@@ -72,12 +77,20 @@ function parseBody(body: unknown): ProductInput | null {
     colors: Array.isArray(b.colors)
       ? b.colors
           .map((c) => {
-            if (typeof c === "string") return c.trim() ? { name: c.trim() } : null;
+            if (typeof c === "string") {
+              const trimmed = c.trim();
+              if (!trimmed) return null;
+              const hex = normalizeHex(trimmed);
+              return hex ? { name: "Custom", hexCode: hex } : { name: trimmed };
+            }
             if (c && typeof c === "object") {
               const obj = c as Record<string, unknown>;
-              const name = typeof obj.name === "string" ? obj.name.trim() : "";
-              const hexCode = typeof obj.hexCode === "string" ? obj.hexCode.trim() : undefined;
-              return name ? { name, hexCode } : null;
+              const rawName = typeof obj.name === "string" ? obj.name.trim() : "";
+              const rawHex = typeof obj.hexCode === "string" ? obj.hexCode.trim() : "";
+              const hex = normalizeHex(rawHex) ?? normalizeHex(rawName);
+              const name = normalizeHex(rawName) ? "" : rawName;
+              if (!name && !hex) return null;
+              return { name: name || "Custom", hexCode: hex ?? undefined };
             }
             return null;
           })

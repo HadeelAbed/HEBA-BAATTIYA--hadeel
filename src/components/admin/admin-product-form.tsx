@@ -264,17 +264,22 @@ export function AdminProductForm({ initial, categories }: { initial?: Product; c
   );
 }
 
+function normalizeHex(value: string): string | null {
+  const m = value.trim().match(/^#?([0-9a-fA-F]{6})$/);
+  return m ? `#${m[1].toUpperCase()}` : null;
+}
+
 function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string }) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [hex, setHex] = useState("#161616");
+  const [code, setCode] = useState("");
 
-  // If the user pastes/types a hex code (e.g. #BFE3F2), treat it as the shade
-  // and show it in the live preview instead of storing it as the name.
+  const previewHex = normalizeHex(code) ?? normalizeHex(name) ?? "#161616";
+
   function handleNameChange(value: string) {
-    const trimmed = value.trim();
-    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
-      setHex(trimmed);
+    // If a hex code is typed into the name box, route it to the code box instead.
+    if (normalizeHex(value)) {
+      setCode(value);
       setName("");
     } else {
       setName(value);
@@ -283,10 +288,12 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
 
   function submit(e?: { preventDefault: () => void }) {
     e?.preventDefault();
-    if (!name.trim()) return;
-    onAdd({ name: name.trim(), hexCode: hex });
+    const hexCode = normalizeHex(code) ?? normalizeHex(name);
+    const colorName = name.trim() && !normalizeHex(name) ? name.trim() : "";
+    if (!colorName || !hexCode) return;
+    onAdd({ name: colorName, hexCode });
     setName("");
-    setHex("#161616");
+    setCode("");
     setOpen(false);
   }
 
@@ -306,13 +313,13 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
     <div className="flex items-center gap-2 border border-charcoal px-2 py-1.5">
       <span
         className="h-7 w-7 shrink-0 rounded-full border border-black/10"
-        style={{ backgroundColor: hex }}
+        style={{ backgroundColor: previewHex }}
         aria-hidden
       />
       <input
         type="color"
-        value={hex}
-        onChange={(e) => setHex(e.target.value)}
+        value={previewHex}
+        onChange={(e) => setCode(e.target.value)}
         aria-label="Pick exact color shade"
         title="Pick exact color shade"
         className="h-7 w-7 cursor-pointer border border-mist bg-white p-0.5"
@@ -325,14 +332,25 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
           if (e.key === "Enter") submit(e);
           if (e.key === "Escape") setOpen(false);
         }}
-        placeholder="Color name (e.g. Blue)"
-        className="w-32 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
+        placeholder="Name (e.g. Blue)"
+        className="w-24 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
       />
-      <span className="w-14 shrink-0 text-[10px] text-stone">{hex}</span>
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit(e);
+          if (e.key === "Escape") setOpen(false);
+        }}
+        placeholder="#BFE3F2"
+        title="Color code (hex), e.g. #BFE3F2"
+        className="w-24 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
+      />
+      <span className="w-14 shrink-0 text-[10px] text-stone">{previewHex}</span>
       <button
         type="button"
         onClick={() => submit()}
-        disabled={!name.trim()}
+        disabled={!name.trim() || !normalizeHex(code)}
         className="text-xs tracking-widest2 uppercase text-charcoal disabled:opacity-40"
       >
         Add
