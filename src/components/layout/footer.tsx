@@ -21,8 +21,6 @@ const FOOTER_LINKS: {
     heading: "Client Care",
     links: [
       { label: "Size Guide", href: "/size-guide" },
-      { label: "Shipping & Returns", href: "/shipping-returns" },
-      { label: "FAQ", href: "/faq" },
       { label: "Contact Us", href: "/contact" },
     ],
   },
@@ -30,9 +28,7 @@ const FOOTER_LINKS: {
     heading: "The House",
     links: [
       { label: "About", href: "/about" },
-      { label: "Couture Services", href: "/about#couture-services" },
       { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms & Conditions", href: "/terms" },
     ],
   },
 ];

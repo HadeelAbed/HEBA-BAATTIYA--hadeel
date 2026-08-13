@@ -6,7 +6,7 @@ import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { Input, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const TABS = ["Homepage Hero", "Brand Story", "Couture Services", "Announcement Bar"] as const;
+const TABS = ["Homepage Hero", "Brand Story", "Couture Services"] as const;
 
 const DEFAULT_HERO = {
   eyebrow: "The Spring Couture Collection",
@@ -26,7 +26,6 @@ export default function AdminContentPage() {
 
   const [hero, setHero] = useState(DEFAULT_HERO);
   const [story, setStory] = useState(DEFAULT_STORY);
-  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/content")
@@ -35,7 +34,6 @@ export default function AdminContentPage() {
         const c = data.content ?? {};
         setHero({ ...DEFAULT_HERO, ...(c.homepage_hero ?? {}) });
         setStory({ ...DEFAULT_STORY, ...(c.brand_story ?? {}) });
-        setAnnouncement(c.announcement ?? "");
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -68,23 +66,6 @@ export default function AdminContentPage() {
       });
       if (!res.ok) throw new Error("Failed to save");
       toast.success("Brand story updated and published");
-    } catch {
-      toast.error("Failed to save content");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSaveAnnouncement() {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/admin/content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "announcement", value: announcement }),
-      });
-      if (!res.ok) throw new Error("Failed to save");
-      toast.success("Announcement updated and published");
     } catch {
       toast.error("Failed to save content");
     } finally {
@@ -146,20 +127,6 @@ export default function AdminContentPage() {
               Couture services content is managed per-service. Select a service card from the
               homepage preview to edit its title and description.
             </p>
-          )}
-
-          {tab === "Announcement Bar" && (
-            <div className="space-y-5">
-              <Input
-                label="Announcement Message"
-                value={announcement}
-                onChange={(e) => setAnnouncement(e.target.value)}
-              />
-              <p className="text-xs text-stone">This message appears as a thin bar above the navigation on all pages.</p>
-              <Button variant="primary" size="md" className="mt-2" loading={saving} onClick={handleSaveAnnouncement}>
-                Publish Changes
-              </Button>
-            </div>
           )}
         </div>
       </div>

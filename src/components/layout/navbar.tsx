@@ -24,20 +24,12 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
   const pathname = usePathname();
   const { status, data } = useSession();
   const itemCount = useCartStore((s) => s.itemCount());
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
 
   useEffect(() => setHydrated(true), []);
-
-  useEffect(() => {
-    fetch("/api/admin/content?key=announcement")
-      .then((r) => r.json())
-      .then((d) => setAnnouncement(d.content ?? ""))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -63,12 +55,7 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
           isTransparent ? "bg-transparent py-6" : "bg-white/95 py-4 shadow-[0_1px_0_0_rgba(0,0,0,0.06)] backdrop-blur-md"
         )}
       >
-        {announcement && (
-          <div className="absolute inset-x-0 top-0 bg-charcoal px-4 py-2 text-center text-[11px] tracking-widest uppercase text-ivory">
-            {announcement}
-          </div>
-        )}
-        <div className={cn("container-site flex items-center justify-between", announcement && "pt-9")}>
+        <div className={cn("container-site flex items-center justify-between")}>
           <button
             className="flex w-8 items-center justify-start lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
