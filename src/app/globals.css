@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-cinzel: "Cinzel", serif;
+  --font-poppins: "Poppins", sans-serif;
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background-color: #ffffff;
+  color: #161616;
+}
+
+body {
+  font-family: var(--font-poppins);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: #161616;
+  color: #f8f8f5;
+}
+
+/* Hairline scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f8f8f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d7d0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8c8a84;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-cinzel);
+    font-weight: 500;
+  }
+
+  /* Visible keyboard focus everywhere */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 1.5px solid #161616;
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .container-site {
+    @apply max-w-site mx-auto px-6 md:px-10 lg:px-16;
+  }
+
+  .eyebrow {
+    @apply text-[11px] tracking-widest3 uppercase text-stone font-body;
+  }
+
+  .hairline {
+    @apply border-hairline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
