@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,7 +62,9 @@ export default function RegisterPage() {
     }
 
     toast.success("Account created — welcome to the House");
-    router.push("/dashboard");
+    const session = await getSession();
+    const role = session?.user?.role;
+    router.push(role === "ADMIN" || role === "SUPER_ADMIN" ? "/admin" : "/");
     router.refresh();
   }
 

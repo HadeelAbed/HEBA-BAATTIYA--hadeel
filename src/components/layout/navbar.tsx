@@ -26,7 +26,9 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
   const [hydrated, setHydrated] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const pathname = usePathname();
-  const { status } = useSession();
+  const { status, data: session } = useSession();
+  const isAdmin =
+    session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   const itemCount = useCartStore((s) => s.itemCount());
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
 
@@ -92,6 +94,17 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
                 {link.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "font-body text-[13px] tracking-widest2 uppercase underline underline-offset-8 transition-opacity hover:opacity-60",
+                  isTransparent ? "text-white" : "text-charcoal"
+                )}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex flex-1 justify-center lg:flex-none">
@@ -111,7 +124,7 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
               <Search size={19} strokeWidth={1.5} />
             </button>
             <Link
-              href={status === "authenticated" ? "/dashboard" : "/login"}
+              href={status === "authenticated" ? (isAdmin ? "/admin" : "/dashboard") : "/login"}
               aria-label="Account"
               className={cn("hidden transition-opacity hover:opacity-60 sm:block", isTransparent ? "text-white" : "text-charcoal")}
             >
@@ -164,6 +177,15 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
                   {link.label}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="font-display text-2xl tracking-wide text-charcoal"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
               <div className="mt-6 flex gap-8 border-t border-hairline pt-6">
                 {status === "authenticated" ? (
                   <button

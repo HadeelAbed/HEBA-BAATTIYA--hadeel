@@ -23,7 +23,7 @@ export const authConfig = {
         .map((e) => e.trim().toLowerCase())
         .filter(Boolean);
       if (token.email && adminList.includes(String(token.email).toLowerCase())) {
-        token.role = "ADMIN";
+        if (token.role !== "SUPER_ADMIN") token.role = "ADMIN";
       }
       return token;
     },
