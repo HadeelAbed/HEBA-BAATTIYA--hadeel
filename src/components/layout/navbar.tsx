@@ -26,9 +26,7 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
   const [hydrated, setHydrated] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const pathname = usePathname();
-  const { status, data: session } = useSession();
-  const isAdmin =
-    session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  const { status } = useSession();
   const itemCount = useCartStore((s) => s.itemCount());
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
 
@@ -113,7 +111,7 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
               <Search size={19} strokeWidth={1.5} />
             </button>
             <Link
-              href={status === "authenticated" ? (isAdmin ? "/admin" : "/dashboard") : "/login"}
+              href={status === "authenticated" ? "/dashboard" : "/login"}
               aria-label="Account"
               className={cn("hidden transition-opacity hover:opacity-60 sm:block", isTransparent ? "text-white" : "text-charcoal")}
             >
