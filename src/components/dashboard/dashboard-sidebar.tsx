@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useCartStore } from "@/lib/store/cart-store";
 import { User, Package, Heart, MapPin, Lock, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,10 @@ export function DashboardSidebar() {
           );
         })}
         <button
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => {
+            useCartStore.setState({ lines: [], coupon: null });
+            signOut({ callbackUrl: "/" });
+          }}
           className="flex flex-shrink-0 items-center gap-3 whitespace-nowrap px-4 py-3 text-sm text-stone transition hover:bg-bone lg:w-56"
         >
           <LogOut size={16} strokeWidth={1.5} />

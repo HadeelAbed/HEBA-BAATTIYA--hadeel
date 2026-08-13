@@ -169,6 +169,7 @@ export function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolea
                   <button
                     onClick={() => {
                       setMobileOpen(false);
+                      useCartStore.setState({ lines: [], coupon: null });
                       signOut({ callbackUrl: "/" });
                     }}
                     className="text-xs tracking-widest2 uppercase"
