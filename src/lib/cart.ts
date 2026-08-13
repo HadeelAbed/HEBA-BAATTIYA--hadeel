@@ -10,13 +10,14 @@ const CART_COOKIE = "hb_cart";
 export type CartOwner = { userId: string | null; sessionId: string | null };
 
 async function getCartOwner(): Promise<CartOwner> {
-  const session = await auth();
-  if (session?.user?.id) {
-    return { userId: session.user.id, sessionId: null };
-  }
-
   const store = await cookies();
   let sessionId = store.get(CART_COOKIE)?.value;
+
+  const session = await auth();
+  if (session?.user?.id) {
+    return { userId: session.user.id, sessionId: sessionId ?? null };
+  }
+
   if (!sessionId) {
     sessionId = randomUUID();
     store.set(CART_COOKIE, sessionId, {
@@ -44,37 +45,37 @@ export async function resolveCart() {
     let cart = await prisma.cart.findUnique({ where: { userId } });
     if (!cart) {
       cart = await prisma.cart.create({ data: { userId } });
+    }
 
-      // Merge any guest cart (from the session cookie) into the signed-in cart
-      if (sessionId) {
-        const guestCart = await prisma.cart.findUnique({
-          where: { sessionId },
-          include: { items: true },
-        });
-        if (guestCart) {
-          for (const item of guestCart.items) {
-            await prisma.cartItem.upsert({
-              where: {
-                cartId_productId_colorName_sizeLabel: {
-                  cartId: cart.id,
-                  productId: item.productId,
-                  colorName: item.colorName,
-                  sizeLabel: item.sizeLabel,
-                },
-              },
-              update: { quantity: { increment: item.quantity } },
-              create: {
+    // Merge any guest cart (from the session cookie) into the signed-in cart
+    if (sessionId) {
+      const guestCart = await prisma.cart.findUnique({
+        where: { sessionId },
+        include: { items: true },
+      });
+      if (guestCart) {
+        for (const item of guestCart.items) {
+          await prisma.cartItem.upsert({
+            where: {
+              cartId_productId_colorName_sizeLabel: {
                 cartId: cart.id,
                 productId: item.productId,
                 colorName: item.colorName,
                 sizeLabel: item.sizeLabel,
-                quantity: item.quantity,
               },
-            });
-          }
-          await prisma.cart.delete({ where: { id: guestCart.id } });
-          clearCartCookie();
+            },
+            update: { quantity: { increment: item.quantity } },
+            create: {
+              cartId: cart.id,
+              productId: item.productId,
+              colorName: item.colorName,
+              sizeLabel: item.sizeLabel,
+              quantity: item.quantity,
+            },
+          });
         }
+        await prisma.cart.delete({ where: { id: guestCart.id } });
+        clearCartCookie();
       }
     }
     return { cart, owner };
