@@ -7,7 +7,6 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const users = await prisma.user.findMany({
-    where: { role: "CUSTOMER" },
     include: {
       orders: { select: { total: true } },
     },
@@ -20,6 +19,7 @@ export async function GET() {
       name: (u.name ?? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim()) || u.email,
       email: u.email,
       phone: u.phone,
+      role: u.role,
       createdAt: u.createdAt.toISOString(),
       totalOrders: u.orders.length,
       totalSpent: u.orders.reduce((sum, o) => sum + Number(o.total), 0),

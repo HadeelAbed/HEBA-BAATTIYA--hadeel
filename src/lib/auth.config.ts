@@ -17,6 +17,14 @@ export const authConfig = {
         token.id = (user as { id?: string }).id;
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
       }
+      // ADMIN_EMAILS env whitelist — promote these accounts to admin automatically.
+      const adminList = (process.env.ADMIN_EMAILS ?? "")
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+      if (token.email && adminList.includes(String(token.email).toLowerCase())) {
+        token.role = "ADMIN";
+      }
       return token;
     },
     session({ session, token }) {

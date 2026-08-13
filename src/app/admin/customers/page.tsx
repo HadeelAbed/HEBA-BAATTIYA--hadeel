@@ -11,6 +11,7 @@ interface AdminCustomer {
   name: string;
   email: string;
   phone?: string | null;
+  role: string;
   createdAt: string;
   totalOrders: number;
   totalSpent: number;
@@ -19,8 +20,9 @@ interface AdminCustomer {
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[] | null>(null);
   const [search, setSearch] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     fetch("/api/admin/customers")
       .then((r) => r.json())
       .then((data) => setCustomers(data.customers ?? []))
@@ -28,11 +30,38 @@ export default function AdminCustomersPage() {
         toast.error("Failed to load customers");
         setCustomers([]);
       });
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
   const filtered = (customers ?? []).filter(
     (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  async function changeRole(c: AdminCustomer) {
+    const nextRole = c.role === "ADMIN" ? "CUSTOMER" : "ADMIN";
+    setBusyId(c.id);
+    try {
+      const res = await fetch(`/api/admin/customers/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? "Failed to update role");
+        return;
+      }
+      toast.success(nextRole === "ADMIN" ? `${c.email} is now an admin` : `Admin access removed for ${c.email}`);
+      load();
+    } catch {
+      toast.error("Failed to update role");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <>
@@ -56,22 +85,24 @@ export default function AdminCustomersPage() {
                 <th className="px-6 py-3">Customer</th>
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Phone</th>
+                <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3">Joined</th>
                 <th className="px-6 py-3">Orders</th>
                 <th className="px-6 py-3 text-right">Total Spent</th>
+                <th className="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {customers === null && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-stone">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-stone">
                     Loading customers...
                   </td>
                 </tr>
               )}
               {customers !== null && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-stone">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-stone">
                     No customers found.
                   </td>
                 </tr>
@@ -88,9 +119,39 @@ export default function AdminCustomersPage() {
                   </td>
                   <td className="px-6 py-4 text-graphite">{customer.email}</td>
                   <td className="px-6 py-4 text-graphite">{customer.phone ?? "—"}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
+                        customer.role === "SUPER_ADMIN"
+                          ? "bg-charcoal text-white"
+                          : customer.role === "ADMIN"
+                            ? "bg-[#e8e3da] text-charcoal"
+                            : "bg-bone text-stone"
+                      }`}
+                    >
+                      {customer.role === "SUPER_ADMIN" ? "Super Admin" : customer.role === "ADMIN" ? "Admin" : "Customer"}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-graphite">{formatDate(customer.createdAt)}</td>
                   <td className="px-6 py-4">{customer.totalOrders}</td>
                   <td className="px-6 py-4 text-right">{formatPrice(customer.totalSpent)}</td>
+                  <td className="px-6 py-4 text-right">
+                    {customer.role === "SUPER_ADMIN" ? (
+                      <span className="text-xs text-stone">—</span>
+                    ) : (
+                      <button
+                        onClick={() => changeRole(customer)}
+                        disabled={busyId === customer.id}
+                        className="text-xs font-medium text-charcoal underline underline-offset-2 hover:opacity-60 disabled:opacity-40"
+                      >
+                        {busyId === customer.id
+                          ? "Updating..."
+                          : customer.role === "ADMIN"
+                            ? "Remove admin"
+                            : "Make admin"}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
