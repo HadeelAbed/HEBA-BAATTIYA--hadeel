@@ -269,7 +269,20 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
   const [name, setName] = useState("");
   const [hex, setHex] = useState("#161616");
 
-  function submit() {
+  // If the user pastes/types a hex code (e.g. #BFE3F2), treat it as the shade
+  // and show it in the live preview instead of storing it as the name.
+  function handleNameChange(value: string) {
+    const trimmed = value.trim();
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
+      setHex(trimmed);
+      setName("");
+    } else {
+      setName(value);
+    }
+  }
+
+  function submit(e?: { preventDefault: () => void }) {
+    e?.preventDefault();
     if (!name.trim()) return;
     onAdd({ name: name.trim(), hexCode: hex });
     setName("");
@@ -291,6 +304,11 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
 
   return (
     <div className="flex items-center gap-2 border border-charcoal px-2 py-1.5">
+      <span
+        className="h-7 w-7 shrink-0 rounded-full border border-black/10"
+        style={{ backgroundColor: hex }}
+        aria-hidden
+      />
       <input
         type="color"
         value={hex}
@@ -302,17 +320,18 @@ function AddColor({ onAdd }: { onAdd: (color: { name: string; hexCode: string })
       <input
         autoFocus
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => handleNameChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") submit();
+          if (e.key === "Enter") submit(e);
           if (e.key === "Escape") setOpen(false);
         }}
-        placeholder="Color name"
-        className="w-28 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
+        placeholder="Color name (e.g. Blue)"
+        className="w-32 border border-mist px-2 py-1 text-xs focus:border-charcoal focus:outline-none"
       />
+      <span className="w-14 shrink-0 text-[10px] text-stone">{hex}</span>
       <button
         type="button"
-        onClick={submit}
+        onClick={() => submit()}
         disabled={!name.trim()}
         className="text-xs tracking-widest2 uppercase text-charcoal disabled:opacity-40"
       >
